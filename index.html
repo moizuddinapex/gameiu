@@ -3,33 +3,572 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>City Drive - POV Car Game</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Highway Racing - Traffic Racer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a472a, #0a1f0a);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Arial', 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            background: #1a2a1a;
+            cursor: none;
+        }
+
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.75);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 15px;
+            backdrop-filter: blur(8px);
+            font-weight: bold;
+            z-index: 10;
+            font-size: 18px;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        .speed-panel {
+            color: #0f0;
+            font-size: 24px;
+        }
+
+        .score-panel {
+            color: #ffaa00;
+        }
+
+        .nitro-bar {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            width: 150px;
+            height: 12px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 6px;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .nitro-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00aaff, #0088ff);
+            border-radius: 6px;
+            transition: width 0.1s;
+        }
+
+        .controls-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            color: #ccc;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-size: 11px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+            font-family: monospace;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 30px 40px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 20;
+            min-width: 280px;
+            backdrop-filter: blur(10px);
+            border: 1px solid #ff6600;
+        }
+
+        .game-over h2 {
+            margin-bottom: 15px;
+            color: #ff4444;
+            font-size: 32px;
+        }
+
+        .game-over button {
+            margin-top: 20px;
+            padding: 12px 28px;
+            background: #ff6600;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            transition: transform 0.2s;
+        }
+
+        .game-over button:hover {
+            background: #ff5500;
+            transform: scale(1.05);
+        }
+
+        .mode-select {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 30;
+            backdrop-filter: blur(10px);
+        }
+
+        .mode-select button {
+            margin: 10px;
+            padding: 12px 24px;
+            font-size: 18px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .mode-select button:hover {
+            background: #ff6600;
+        }
+
+        @media (max-width: 768px) {
+            .hud { font-size: 14px; padding: 8px 16px; }
+            .speed-panel { font-size: 18px; }
+            .controls-info { font-size: 9px; }
+        }
+    </style>
 </head>
 <body>
-    <div class="game-container">
-        <canvas id="gameCanvas"></canvas>
-        <div class="hud">
-            <div class="speedometer">
-                <span>Speed: </span>
-                <span id="speedValue">0</span>
-                <span> km/h</span>
-            </div>
-            <div class="score">
-                <span>Score: </span>
-                <span id="scoreValue">0</span>
-            </div>
-            <div class="controls-info">
-                <p>↑ ↓ → ← or WASD to drive</p>
-                <p>Space to brake</p>
-            </div>
-        </div>
-        <div class="game-over" style="display: none;">
-            <h2>Game Over!</h2>
-            <p>Final Score: <span id="finalScore">0</span></p>
-            <button onclick="resetGame()">Play Again</button>
-        </div>
+<div class="game-container">
+    <canvas id="gameCanvas"></canvas>
+    <div class="hud">
+        <div class="speed-panel">SPEED: <span id="speedValue">0</span> km/h</div>
+        <div class="score-panel">SCORE: <span id="scoreValue">0</span></div>
     </div>
-    <script src="game.js"></script>
+    <div class="nitro-bar">
+        <div class="nitro-fill" id="nitroFill"></div>
+    </div>
+    <div class="controls-info">
+        ↑ ↓ = Accel / Brake &nbsp;&nbsp;|&nbsp;&nbsp; ← → = Steer &nbsp;&nbsp;|&nbsp;&nbsp; F = NITRO &nbsp;&nbsp;|&nbsp;&nbsp; C = Camera
+    </div>
+    <div class="game-over" style="display: none;">
+        <h2>CRASH!</h2>
+        <p>Final Score: <span id="finalScore">0</span></p>
+        <button onclick="resetGame()">RESTART</button>
+    </div>
+    <div class="mode-select" id="modeSelect">
+        <h2 style="margin-bottom:20px">SELECT MODE</h2>
+        <button onclick="startGame('normal')">NORMAL MODE</button>
+        <button onclick="startGame('nitro')">NITRO MODE</button>
+        <button onclick="startGame('hard')">HARD MODE</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = 800;
+    canvas.height = 600;
+    
+    // Game state
+    let gameRunning = false;
+    let score = 0;
+    let speed = 0;
+    let maxSpeed = 220;
+    let acceleration = 3.5;
+    let brakePower = 6;
+    let turnSpeed = 4.5;
+    let gameMode = 'normal';
+    
+    // Car position (0 = center, -1 = left lane, 1 = right lane)
+    let lane = 0;
+    let lanePositions = [-1.2, 0, 1.2];
+    let targetLane = 0;
+    
+    // Camera angle (0 = close, 1 = far)
+    let cameraView = 0;
+    
+    // Nitro
+    let nitroAmount = 100;
+    let nitroActive = false;
+    let nitroMultiplier = 1;
+    
+    // World objects
+    let roadLines = [];
+    let trafficCars = [];
+    let trees = [];
+    let lastSpawnFrame = 0;
+    let frameCount = 0;
+    
+    // Road animation
+    let roadOffset = 0;
+    
+    // Camera height factor
+    let cameraHeight = 0.6;
+    
+    // Initialize world
+    function init() {
+        createRoadLines();
+        createTrees();
+        setupEventListeners();
+    }
+    
+    function createRoadLines() {
+        for (let i = 0; i < 30; i++) {
+            roadLines.push({
+                y: i * 40,
+                width: 8,
+                height: 25
+            });
+        }
+    }
+    
+    function createTrees() {
+        for (let i = 0; i < 40; i++) {
+            trees.push({
+                x: (Math.random() - 0.5) * 500,
+                z: Math.random() * 2000,
+                size: 20 + Math.random() * 15
+            });
+        }
+    }
+    
+    function spawnTrafficCar() {
+        const carColors = ['#cc3333', '#33cc33', '#3399ff', '#ffcc00', '#ff66cc', '#ffffff'];
+        const carX = lanePositions[Math.floor(Math.random() * lanePositions.length)];
+        trafficCars.push({
+            x: carX,
+            z: -300 - Math.random() * 400,
+            width: 1.8,
+            height: 0.8,
+            color: carColors[Math.floor(Math.random() * carColors.length)],
+            speed: 80 + Math.random() * 70
+        });
+    }
+    
+    function setupEventListeners() {
+        window.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            
+            switch(e.key) {
+                case 'ArrowUp': speed = Math.min(maxSpeed * nitroMultiplier, speed + acceleration); break;
+                case 'ArrowDown': speed = Math.max(-30, speed - brakePower); break;
+                case 'ArrowLeft': targetLane = Math.max(-1, targetLane - 1); break;
+                case 'ArrowRight': targetLane = Math.min(1, targetLane + 1); break;
+                case 'f': case 'F': 
+                    if (nitroAmount >= 30 && gameMode === 'nitro') {
+                        nitroActive = true;
+                        nitroMultiplier = 1.8;
+                        nitroAmount -= 30;
+                        setTimeout(() => { nitroActive = false; nitroMultiplier = 1; }, 2000);
+                    }
+                    break;
+                case 'c': case 'C': cameraView = (cameraView + 1) % 3; break;
+            }
+            e.preventDefault();
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                if (Math.abs(speed) < 5) speed = 0;
+            }
+        });
+    }
+    
+    function updateGame() {
+        if (!gameRunning) return;
+        
+        // Natural deceleration
+        if (!(keys.ArrowUp)) {
+            speed = Math.max(0, speed - 0.8);
+        }
+        
+        // Update lane smoothly
+        lane += (targetLane - lane) * 0.2;
+        
+        // Update nitro regeneration
+        if (gameMode === 'nitro') {
+            if (!nitroActive && nitroAmount < 100) {
+                nitroAmount = Math.min(100, nitroAmount + 0.5);
+            }
+            document.getElementById('nitroFill').style.width = nitroAmount + '%';
+        } else {
+            document.getElementById('nitroFill').style.width = '0%';
+        }
+        
+        // Update score based on speed
+        score += Math.floor(speed / 10);
+        document.getElementById('scoreValue').innerText = Math.floor(score);
+        document.getElementById('speedValue').innerText = Math.floor(speed);
+        
+        // Spawn traffic
+        frameCount++;
+        if (frameCount > Math.max(25, 60 - Math.floor(speed / 15))) {
+            frameCount = 0;
+            if (trafficCars.length < 12) spawnTrafficCar();
+        }
+        
+        // Update traffic positions
+        for (let i = 0; i < trafficCars.length; i++) {
+            trafficCars[i].z += (speed + trafficCars[i].speed) / 20;
+            
+            // Remove if passed
+            if (trafficCars[i].z > 300) {
+                trafficCars.splice(i, 1);
+                i--;
+                continue;
+            }
+            
+            // Collision detection (simplified 3D)
+            const carZ = 0;
+            const carXPos = lane;
+            const trafficZ = trafficCars[i].z;
+            const trafficXPos = trafficCars[i].x;
+            
+            if (Math.abs(trafficZ - carZ) < 25 && Math.abs(carXPos - trafficXPos) < 0.9) {
+                gameOver();
+                return;
+            }
+        }
+        
+        // Road animation
+        roadOffset = (roadOffset + speed / 8) % 40;
+        
+        // Camera height effect based on speed
+        cameraHeight = 0.5 + Math.min(0.3, speed / 500);
+    }
+    
+    function draw3DRoad() {
+        const width = canvas.width;
+        const height = canvas.height;
+        const horizon = height * 0.55;
+        
+        // Sky gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, horizon);
+        grad.addColorStop(0, '#0a0f2a');
+        grad.addColorStop(1, '#1a2a3a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, horizon);
+        
+        // Road drawing with perspective
+        const roadWidth = 300;
+        const maxRoadWidth = 600;
+        
+        for (let y = horizon; y <= height; y++) {
+            const perspective = (y - horizon) / (height - horizon);
+            const currentRoadWidth = roadWidth + (maxRoadWidth - roadWidth) * perspective;
+            const leftEdge = width/2 - currentRoadWidth/2 + lane * 80 * perspective;
+            const rightEdge = width/2 + currentRoadWidth/2 + lane * 80 * perspective;
+            
+            // Road color
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(leftEdge, y, rightEdge - leftEdge, 1);
+            
+            // Lane markings
+            const laneMarkingX = width/2 + lane * 80 * perspective;
+            ctx.fillStyle = '#ffff00';
+            ctx.fillRect(laneMarkingX - 2, y, 4, 1);
+        }
+        
+        // Draw road lines with perspective
+        for (let i = 0; i < roadLines.length; i++) {
+            const line = roadLines[i];
+            const yPos = horizon + (line.y - roadOffset) % (height - horizon);
+            if (yPos > horizon && yPos < height) {
+                const perspective = (yPos - horizon) / (height - horizon);
+                const roadPos = width/2 + lane * 80 * perspective;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(roadPos - 3, yPos, 6, 12);
+            }
+        }
+        
+        // Draw trees/buildings
+        for (let tree of trees) {
+            const zPos = (tree.z - (speed * 2)) % 1500;
+            const yPos = horizon + (zPos / 8);
+            if (yPos > horizon && yPos < height) {
+                const perspective = (yPos - horizon) / (height - horizon);
+                const size = tree.size * (1 - perspective * 0.5);
+                const xPos = width/2 - 150 + tree.x * 50 * perspective;
+                
+                ctx.fillStyle = '#2d5a27';
+                ctx.fillRect(xPos - size/2, yPos - size, size, size);
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(xPos - 3, yPos - size/2, 6, size/2);
+            }
+        }
+        
+        // Draw traffic cars
+        for (let car of trafficCars) {
+            const zPos = car.z + 100;
+            const yPos = horizon + (zPos / 4);
+            if (yPos > horizon && yPos < height) {
+                const perspective = (yPos - horizon) / (height - horizon);
+                const carWidth = 40 * (1 - perspective * 0.3);
+                const carHeight = 25 * (1 - perspective * 0.3);
+                const xPos = width/2 + car.x * 90 * perspective;
+                
+                ctx.fillStyle = car.color;
+                ctx.fillRect(xPos - carWidth/2, yPos - carHeight, carWidth, carHeight);
+                ctx.fillStyle = '#333';
+                ctx.fillRect(xPos - carWidth/3, yPos - carHeight + 5, carWidth/1.5, 5);
+                // Windows
+                ctx.fillStyle = '#88ccff';
+                ctx.fillRect(xPos - carWidth/3, yPos - carHeight + 10, carWidth/2, 8);
+            }
+        }
+    }
+    
+    function drawCar() {
+        const width = canvas.width;
+        const height = canvas.height;
+        const carY = height * 0.75;
+        
+        // Car body
+        ctx.fillStyle = '#ff3333';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(width/2 - 25, carY - 45, 50, 90);
+        
+        // Roof
+        ctx.fillStyle = '#cc2222';
+        ctx.fillRect(width/2 - 18, carY - 40, 36, 40);
+        
+        // Windows
+        ctx.fillStyle = '#88ccff';
+        ctx.fillRect(width/2 - 15, carY - 35, 30, 25);
+        
+        // Wheels
+        ctx.fillStyle = '#222';
+        ctx.fillRect(width/2 - 30, carY - 35, 10, 20);
+        ctx.fillRect(width/2 + 20, carY - 35, 10, 20);
+        ctx.fillRect(width/2 - 30, carY - 10, 10, 20);
+        ctx.fillRect(width/2 + 20, carY - 10, 10, 20);
+        
+        // Headlights
+        ctx.fillStyle = '#ffffaa';
+        ctx.fillRect(width/2 + 20, carY - 40, 8, 8);
+        ctx.fillRect(width/2 - 28, carY - 40, 8, 8);
+        
+        // Nitro flames
+        if (nitroActive) {
+            ctx.fillStyle = '#ff6600';
+            for (let i = 0; i < 5; i++) {
+                ctx.fillRect(width/2 - 10 + i * 5, carY + 10, 3, 15 + Math.random() * 20);
+            }
+        }
+        
+        ctx.shadowBlur = 0;
+    }
+    
+    function drawSpeedEffect() {
+        if (speed > 150) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(0.4, (speed - 150) / 150);
+            for (let i = 0; i < 30; i++) {
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * canvas.width, canvas.height);
+                ctx.lineTo(Math.random() * canvas.width, canvas.height - 80);
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+    }
+    
+    function gameLoop() {
+        if (gameRunning) {
+            updateGame();
+        }
+        
+        draw3DRoad();
+        drawCar();
+        drawSpeedEffect();
+        
+        requestAnimationFrame(gameLoop);
+    }
+    
+    function gameOver() {
+        gameRunning = false;
+        document.getElementById('finalScore').innerText = Math.floor(score);
+        document.querySelector('.game-over').style.display = 'block';
+    }
+    
+    function resetGame() {
+        gameRunning = true;
+        score = 0;
+        speed = 80;
+        lane = 0;
+        targetLane = 0;
+        trafficCars = [];
+        frameCount = 0;
+        nitroAmount = 100;
+        nitroActive = false;
+        nitroMultiplier = 1;
+        
+        if (gameMode === 'hard') maxSpeed = 180;
+        else if (gameMode === 'nitro') maxSpeed = 240;
+        else maxSpeed = 220;
+        
+        document.querySelector('.game-over').style.display = 'none';
+    }
+    
+    function startGame(mode) {
+        gameMode = mode;
+        if (mode === 'hard') maxSpeed = 180;
+        else if (mode === 'nitro') maxSpeed = 240;
+        else maxSpeed = 220;
+        
+        document.getElementById('modeSelect').style.display = 'none';
+        gameRunning = true;
+        resetGame();
+    }
+    
+    // Helper for keys
+    const keys = { ArrowUp: false };
+    window.addEventListener('keydown', (e) => { if (e.key === 'ArrowUp') keys.ArrowUp = true; });
+    window.addEventListener('keyup', (e) => { if (e.key === 'ArrowUp') keys.ArrowUp = false; });
+    
+    init();
+    gameLoop();
+</script>
 </body>
 </html>

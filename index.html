@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>City Drive - POV Car Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div class="hud">
+            <div class="speedometer">
+                <span>Speed: </span>
+                <span id="speedValue">0</span>
+                <span> km/h</span>
+            </div>
+            <div class="score">
+                <span>Score: </span>
+                <span id="scoreValue">0</span>
+            </div>
+            <div class="controls-info">
+                <p>↑ ↓ → ← or WASD to drive</p>
+                <p>Space to brake</p>
+            </div>
+        </div>
+        <div class="game-over" style="display: none;">
+            <h2>Game Over!</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <button onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
